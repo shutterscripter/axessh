@@ -1,0 +1,5 @@
+.DS_Store
+.build/
+.swiftpm/
+# Built by scripts/build-sshpass.sh
+Sources/AxeSSH/Resources/sshpass

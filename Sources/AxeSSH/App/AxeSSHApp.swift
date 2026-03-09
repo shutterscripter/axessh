@@ -23,5 +23,12 @@ struct AxeSSHApp: App {
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 640, height: 480)
+
+        WindowGroup("Settings", id: "settings") {
+            SettingsView()
+                .environmentObject(appState)
+        }
+        .windowResizability(.contentSize)
+        .defaultSize(width: 420, height: 460)
     }
 }

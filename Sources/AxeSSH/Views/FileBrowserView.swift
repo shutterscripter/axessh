@@ -330,14 +330,15 @@ struct FileBrowserView: View {
     }
 
     private func performDelete() async {
-        guard let profile = profile, !selectedItems.isEmpty else { return }
+        guard let baseProfile = profile, !selectedItems.isEmpty else { return }
         let toDelete = selectedItems
         selectedItems = []
         showDeleteConfirmation = false
         isDeleting = true
         defer { isDeleting = false }
         do {
-            try await SFTPService.deleteItems(profile: profile, paths: toDelete.map(\.path))
+            let resolvedProfile = try await resolvedProfileForSFTP(baseProfile)
+            try await SFTPService.deleteItems(profile: resolvedProfile, paths: toDelete.map(\.path))
             await loadDirectory()
         } catch {
             errorMessage = error.localizedDescription
@@ -346,12 +347,18 @@ struct FileBrowserView: View {
     }
 
     private func loadDirectory() async {
-        guard let profile = profile else { return }
+        guard let baseProfile = profile else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            items = try await SFTPService.listDirectory(profile: profile, path: currentPath)
+            let resolvedProfile = try await resolvedProfileForSFTP(baseProfile)
+            let fetched = try await SFTPService.listDirectory(profile: resolvedProfile, path: currentPath)
+            if appState.settings.showHiddenFiles {
+                items = fetched
+            } else {
+                items = fetched.filter { !$0.name.hasPrefix(".") }
+            }
         } catch {
             errorMessage = error.localizedDescription
             items = []
@@ -403,29 +410,46 @@ struct FileBrowserView: View {
     }
 
     private func uploadFiles(_ urls: [URL]) async {
-        guard let profile = profile else { return }
+        guard profile != nil else { return }
         let names = urls.map { $0.lastPathComponent }
         let existingNames = Set(items.map { $0.name })
         let conflicts = names.filter { existingNames.contains($0) }
         if !conflicts.isEmpty {
-            conflictingNames = conflicts
-            pendingUploadURLs = urls
-            showOverwriteConfirmation = true
-            return
+            switch appState.settings.uploadConflictPolicy {
+            case .ask:
+                conflictingNames = conflicts
+                pendingUploadURLs = urls
+                showOverwriteConfirmation = true
+                return
+            case .overwrite:
+                break
+            case .skip:
+                let filtered = urls.filter { !existingNames.contains($0.lastPathComponent) }
+                guard !filtered.isEmpty else { return }
+                await performUpload(filtered)
+                return
+            }
         }
         await performUpload(urls)
     }
 
     private func performUpload(_ urls: [URL]) async {
-        guard let profile = profile else { return }
+        guard let baseProfile = profile else { return }
         isUploading = true
         errorMessage = nil
         defer { isUploading = false }
         do {
-            try await SFTPService.uploadFiles(profile: profile, localURLs: urls, remotePath: currentPath)
+            let resolvedProfile = try await resolvedProfileForSFTP(baseProfile)
+            try await SFTPService.uploadFiles(profile: resolvedProfile, localURLs: urls, remotePath: currentPath)
             await loadDirectory()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    private func resolvedProfileForSFTP(_ profile: SSHProfile) async throws -> SSHProfile {
+        try await MainActor.run {
+            try appState.resolveProfileCredentials(for: profile, reason: .fileBrowser)
         }
     }
 

@@ -26,7 +26,7 @@ struct MenuBarContentView: View {
                 .padding(.vertical, 6)
 
             Button("Settings") {
-                // Phase 1 placeholder
+                openSettingsWindow()
             }
             .buttonStyle(.plain)
             .padding(.bottom,5)
@@ -77,7 +77,8 @@ struct MenuBarContentView: View {
                         },
                         onConnect: {
                             do {
-                                try TerminalLauncher.connect(profile: profile)
+                                let resolved = try appState.resolveProfileCredentials(for: profile, reason: .terminalConnect)
+                                try TerminalLauncher.connect(profile: resolved, preference: appState.settings.defaultTerminal)
                                 appState.setStatus(.connected, forProfileID: profile.id)
                             } catch {
                                 alertMessage = error.localizedDescription
@@ -85,6 +86,7 @@ struct MenuBarContentView: View {
                         },
                         onDisconnect: {
                             appState.setStatus(.disconnected, forProfileID: profile.id)
+                            appState.clearRuntimeCredential(for: profile.id)
                         },
                         onBrowse: {
                             openFileBrowserWindow()
@@ -122,5 +124,20 @@ struct MenuBarContentView: View {
     private func openFileBrowserWindow() {
         NSApp.activate(ignoringOtherApps: true)
         openWindow(id: "file-browser")
+    }
+
+    private func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "settings")
+        for delay in [0.15, 0.4, 0.7] as [Double] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                guard let settingsWindow = NSApp.windows.first(where: { window in
+                    window.identifier?.rawValue.contains("settings") == true
+                        || window.title == "Settings"
+                }) else { return }
+                NSApp.activate(ignoringOtherApps: true)
+                settingsWindow.makeKeyAndOrderFront(nil)
+            }
+        }
     }
 }

@@ -4,14 +4,23 @@ import AppKit
 enum TerminalLauncher {
     private static let iTermBundleID = "com.googlecode.iterm2"
 
-    static func connect(profile: SSHProfile) throws {
+    static func connect(profile: SSHProfile, preference: TerminalPreference) throws {
         let command = SSHCommandBuilder.buildConnectCommand(for: profile)
         let escaped = escapeForAppleScript(command)
-
-        if isiTermInstalled() {
-            try runIniTerm(escapedCommand: escaped)
-        } else {
+        switch preference {
+        case .auto:
+            if isiTermInstalled() {
+                try runIniTerm(escapedCommand: escaped)
+            } else {
+                try runInTerminal(escapedCommand: escaped)
+            }
+        case .terminal:
             try runInTerminal(escapedCommand: escaped)
+        case .iTerm:
+            guard isiTermInstalled() else {
+                throw LaunchError("iTerm is not installed")
+            }
+            try runIniTerm(escapedCommand: escaped)
         }
     }
 

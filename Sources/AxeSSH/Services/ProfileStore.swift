@@ -32,4 +32,10 @@ final class ProfileStore {
         let data = try encoder.encode(profiles)
         try data.write(to: fileURL, options: .atomic)
     }
+
+    func clearProfiles() throws {
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            try FileManager.default.removeItem(at: fileURL)
+        }
+    }
 }

@@ -31,8 +31,8 @@ struct MenuBarContentView: View {
             .buttonStyle(.plain)
             .padding(.bottom,5)
 
-            Button("About AxeSSH") {
-                // Phase 1 placeholder
+            Button("About") {
+                openAboutWindow()
             }
             .buttonStyle(.plain)
             .padding(.bottom,5)
@@ -137,6 +137,21 @@ struct MenuBarContentView: View {
                 }) else { return }
                 NSApp.activate(ignoringOtherApps: true)
                 settingsWindow.makeKeyAndOrderFront(nil)
+            }
+        }
+    }
+
+    private func openAboutWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        openWindow(id: "about")
+        for delay in [0.15, 0.4, 0.7] as [Double] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                guard let aboutWindow = NSApp.windows.first(where: { window in
+                    window.identifier?.rawValue.contains("about") == true
+                        || window.title == "About"
+                }) else { return }
+                NSApp.activate(ignoringOtherApps: true)
+                aboutWindow.makeKeyAndOrderFront(nil)
             }
         }
     }

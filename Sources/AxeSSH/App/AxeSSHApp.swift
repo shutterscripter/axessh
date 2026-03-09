@@ -30,5 +30,11 @@ struct AxeSSHApp: App {
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 420, height: 460)
+
+        WindowGroup("About", id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
+        .defaultSize(width: 420, height: 240)
     }
 }

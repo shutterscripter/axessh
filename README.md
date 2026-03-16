@@ -3,9 +3,8 @@
 > A native macOS menu bar app for managing SSH connections and browsing remote files over SFTP—built with SwiftUI and designed to stay out of the way until you need it.
 
 <div align="center">
-	<video src="assets/demo.mp4" controls autoplay loop muted playsinline width="85%"></video>
+  <video src="assets/demo.mp4" controls autoplay loop muted playsinline width="85%"></video>
 </div>
----
 
 ## Highlights
 
